@@ -164,7 +164,7 @@ jobs:
         env:
           CHOCO_API_KEY: ${{ secrets.CHOCO_API_KEY }}
         run: |
-          $nupkg = (Get-Item 'nvpi-r.*.nupkg').FullName
+          $nupkg = (Get-Item 'nvpi-r.*.nupkg' | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
           choco push $nupkg --source 'https://push.chocolatey.org' --api-key $env:CHOCO_API_KEY
 
       - name: Submit NVPI-R to WinGet
@@ -367,7 +367,7 @@ jobs:
         env:
           CHOCO_API_KEY: ${{ secrets.CHOCO_API_KEY }}
         run: |
-          $nupkg = (Get-Item 'nvpi.*.nupkg').FullName
+          $nupkg = (Get-Item 'nvpi.*.nupkg' | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
           choco push $nupkg --source 'https://push.chocolatey.org' --api-key $env:CHOCO_API_KEY
 
       - name: Submit NPI to WinGet
@@ -448,13 +448,22 @@ jobs:
             Write-Host 'No changes to commit'
             exit 0
           }
-          $nvpirUpdated = '${{ steps.nvpir-check.outputs.skip }}' -ne 'true'
-          $nvpiUpdated = '${{ steps.nvpi-check.outputs.skip }}' -ne 'true'
-          $msg = 'chore: bump'
-          if ($nvpirUpdated) { $msg += " nvpi-r to v${{ steps.nvpir-release.outputs.version }}" }
-          if ($nvpirUpdated -and $nvpiUpdated) { $msg += ',' }
-          if ($nvpiUpdated) { $msg += " nvpi to v${{ steps.nvpi-release.outputs.version }}" }
-          if (-not $nvpirUpdated -and -not $nvpiUpdated) { $msg = 'chore: update package manifests' }
+          $nvpirNewVersion = '${{ steps.nvpir-check.outputs.new-version }}' -eq 'true'
+          $nvpiNewVersion  = '${{ steps.nvpi-check.outputs.new-version }}'  -eq 'true'
+          $nvpirProcessed  = '${{ steps.nvpir-check.outputs.skip }}' -ne 'true'
+          $nvpiProcessed   = '${{ steps.nvpi-check.outputs.skip }}'  -ne 'true'
+          if ($nvpirNewVersion -or $nvpiNewVersion) {
+            $msg = 'chore: bump'
+            if ($nvpirNewVersion) { $msg += " nvpi-r to v${{ steps.nvpir-release.outputs.version }}" }
+            if ($nvpirNewVersion -and $nvpiNewVersion) { $msg += ',' }
+            if ($nvpiNewVersion)  { $msg += " nvpi to v${{ steps.nvpi-release.outputs.version }}" }
+          } else {
+            $parts = @()
+            if ($nvpirProcessed) { $parts += "nvpi-r v${{ steps.nvpir-release.outputs.version }}" }
+            if ($nvpiProcessed)  { $parts += "nvpi v${{ steps.nvpi-release.outputs.version }}" }
+            $msg = 'chore: refresh manifests'
+            if ($parts.Count -gt 0) { $msg += " ($($parts -join ', '))" }
+          }
           $msg += "`n`nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
           git commit -m "$msg"
           git push
