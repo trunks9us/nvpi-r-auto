@@ -192,13 +192,28 @@ jobs:
             if ($code -ne 404) { Write-Warning "winget-pkgs contents check returned HTTP $code — proceeding anyway" }
           }
           # Guard 2: open PR already targeting this version
+          # On manual dispatch: close existing PR so we can resubmit with fresh manifests.
+          # On schedule: leave it open (avoids disturbing in-review PRs).
           try {
             $q = [Uri]::EscapeDataString("repo:microsoft/winget-pkgs is:pr is:open xHybred.NVPIRevamped $version")
             $search = Invoke-RestMethod -Uri "https://api.github.com/search/issues?q=$q" `
               -Headers $headers -MaximumRetryCount 2 -RetryIntervalSec 5
             if ($search.total_count -gt 0) {
-              Write-Host "NVPI-R v$version already has open PR #$($search.items[0].number) — skipping submission"
-              exit 0
+              $prNumber = $search.items[0].number
+              if ('${{ github.event_name }}' -eq 'workflow_dispatch') {
+                Write-Host "Manual dispatch: closing existing PR #$prNumber to resubmit fresh"
+                try {
+                  Invoke-RestMethod `
+                    -Uri "https://api.github.com/repos/microsoft/winget-pkgs/pulls/$prNumber" `
+                    -Method PATCH -Body '{"state":"closed"}' -ContentType 'application/json' `
+                    -Headers $headers -MaximumRetryCount 2 -RetryIntervalSec 5 | Out-Null
+                } catch {
+                  Write-Warning "Failed to close PR #$prNumber: $($_.Exception.Message)"
+                }
+              } else {
+                Write-Host "NVPI-R v$version already has open PR #$prNumber — skipping (use workflow_dispatch to force resubmit)"
+                exit 0
+              }
             }
           } catch {
             Write-Warning "PR search check failed: $($_.Exception.Message) — proceeding anyway"
@@ -378,13 +393,28 @@ jobs:
             if ($code -ne 404) { Write-Warning "winget-pkgs contents check returned HTTP $code — proceeding anyway" }
           }
           # Guard 2: open PR already targeting this version
+          # On manual dispatch: close existing PR so we can resubmit with fresh manifests.
+          # On schedule: leave it open (avoids disturbing in-review PRs).
           try {
             $q = [Uri]::EscapeDataString("repo:microsoft/winget-pkgs is:pr is:open Orbmu2k.nvidiaProfileInspector $version")
             $search = Invoke-RestMethod -Uri "https://api.github.com/search/issues?q=$q" `
               -Headers $headers -MaximumRetryCount 2 -RetryIntervalSec 5
             if ($search.total_count -gt 0) {
-              Write-Host "NPI v$version already has open PR #$($search.items[0].number) — skipping submission"
-              exit 0
+              $prNumber = $search.items[0].number
+              if ('${{ github.event_name }}' -eq 'workflow_dispatch') {
+                Write-Host "Manual dispatch: closing existing PR #$prNumber to resubmit fresh"
+                try {
+                  Invoke-RestMethod `
+                    -Uri "https://api.github.com/repos/microsoft/winget-pkgs/pulls/$prNumber" `
+                    -Method PATCH -Body '{"state":"closed"}' -ContentType 'application/json' `
+                    -Headers $headers -MaximumRetryCount 2 -RetryIntervalSec 5 | Out-Null
+                } catch {
+                  Write-Warning "Failed to close PR #$prNumber: $($_.Exception.Message)"
+                }
+              } else {
+                Write-Host "NPI v$version already has open PR #$prNumber — skipping (use workflow_dispatch to force resubmit)"
+                exit 0
+              }
             }
           } catch {
             Write-Warning "PR search check failed: $($_.Exception.Message) — proceeding anyway"
