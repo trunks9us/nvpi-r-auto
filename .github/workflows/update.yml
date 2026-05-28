@@ -115,6 +115,7 @@ jobs:
         run: |
           [xml]$nuspec = Get-Content chocolatey/nvpi-r.nuspec
           $nuspec.package.metadata.version = '${{ steps.nvpir-release.outputs.version }}'
+          $nuspec.package.metadata.releaseNotes = "https://github.com/xHybred/NvidiaProfileInspectorRevamped/releases/tag/${{ steps.nvpir-release.outputs.tag }}"
           $nuspec.Save((Resolve-Path chocolatey/nvpi-r.nuspec).Path)
 
       - name: Update NVPI-R install script
@@ -124,7 +125,8 @@ jobs:
           $content = Get-Content chocolatey/tools/chocolateyInstall.ps1 -Raw
           $content = $content -replace "(?<=url\s*=\s*')[^']*(?=')", '${{ steps.nvpir-release.outputs.url }}'
           $content = $content -replace "(?<=checksum\s*=\s*')[^']*(?=')", '${{ steps.nvpir-hash.outputs.sha256 }}'
-          Set-Content chocolatey/tools/chocolateyInstall.ps1 $content
+          $content = $content.TrimEnd()
+          Set-Content chocolatey/tools/chocolateyInstall.ps1 $content -NoNewline
 
       - name: Update NVPI-R WinGet manifests
         if: steps.nvpir-check.outputs.skip != 'true'
@@ -316,6 +318,7 @@ jobs:
         run: |
           [xml]$nuspec = Get-Content chocolatey-nvpi/nvpi.nuspec
           $nuspec.package.metadata.version = '${{ steps.nvpi-release.outputs.version }}'
+          $nuspec.package.metadata.releaseNotes = "https://github.com/Orbmu2k/nvidiaProfileInspector/releases/tag/${{ steps.nvpi-release.outputs.tag }}"
           $nuspec.Save((Resolve-Path chocolatey-nvpi/nvpi.nuspec).Path)
 
       - name: Update NPI install script
@@ -325,7 +328,8 @@ jobs:
           $content = Get-Content chocolatey-nvpi/tools/chocolateyInstall.ps1 -Raw
           $content = $content -replace "(?<=url\s*=\s*')[^']*(?=')", '${{ steps.nvpi-release.outputs.url }}'
           $content = $content -replace "(?<=checksum\s*=\s*')[^']*(?=')", '${{ steps.nvpi-hash.outputs.sha256 }}'
-          Set-Content chocolatey-nvpi/tools/chocolateyInstall.ps1 $content
+          $content = $content.TrimEnd()
+          Set-Content chocolatey-nvpi/tools/chocolateyInstall.ps1 $content -NoNewline
 
       - name: Update NPI WinGet manifests
         if: steps.nvpi-check.outputs.skip != 'true'
