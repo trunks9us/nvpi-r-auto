@@ -210,7 +210,7 @@ jobs:
                     -Method PATCH -Body '{"state":"closed"}' -ContentType 'application/json' `
                     -Headers $headers -MaximumRetryCount 2 -RetryIntervalSec 5 | Out-Null
                 } catch {
-                  Write-Warning "Failed to close PR #$prNumber: $($_.Exception.Message)"
+                  Write-Warning "Failed to close PR #$($prNumber): $($_.Exception.Message)"
                 }
               } else {
                 Write-Host "NVPI-R v$version already has open PR #$prNumber — skipping (use workflow_dispatch to force resubmit)"
@@ -413,7 +413,7 @@ jobs:
                     -Method PATCH -Body '{"state":"closed"}' -ContentType 'application/json' `
                     -Headers $headers -MaximumRetryCount 2 -RetryIntervalSec 5 | Out-Null
                 } catch {
-                  Write-Warning "Failed to close PR #$prNumber: $($_.Exception.Message)"
+                  Write-Warning "Failed to close PR #$($prNumber): $($_.Exception.Message)"
                 }
               } else {
                 Write-Host "NPI v$version already has open PR #$prNumber — skipping (use workflow_dispatch to force resubmit)"
